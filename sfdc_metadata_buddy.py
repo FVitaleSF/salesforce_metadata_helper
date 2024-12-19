@@ -1,6 +1,5 @@
 import streamlit as st
 from sfdc_login import *
-from sfdc_tooling_request import *
 from sfdc_tooling_response import *
 
 def main():
@@ -15,17 +14,18 @@ def main():
         
     sidebar_menu()
 
-    st.write(st.session_state.sfdc_api)
-    st.write(st.session_state.apex_classes)
-
 def get_apex_classes():
     try:
-        st.session_state.apex_classes = tooling_class_query()
+        st.session_state.apex_classes = get_class_properties(st.session_state.sfdc_api)
     except Exception as e:
         st.error(e)
 
-def get_test_classes():
-    return tooling_test_suite_query()
+def get_test_classes(selected_classes):
+    api = st.session_state.sfdc_api
+    try:
+        return tooling_test_suite_query(api,selected_classes)
+    except Exception as e:
+        st.error(e)
 
 def sidebar_menu():
     if st.session_state.sfdc_api == None:
@@ -34,6 +34,8 @@ def sidebar_menu():
         with st.sidebar:
             if st.button('Logout'):
                 sfdc_logout()
+            if st.session_state.apex_classes != None:
+                class_selection_menu()
 
 def show_login():
 
@@ -48,6 +50,21 @@ def show_login():
         elif st.button('Login'):
             sfdc_login(params=params)
             get_apex_classes()
+
+def class_selection_menu():
+    selected_classes = st.multiselect('Choose Classes',options = st.session_state.apex_classes)
+    if selected_classes:
+        selected_tests = get_test_class_properties(st.session_state.sfdc_api,selected_classes)
+        multi_select_unit_tests(selected_tests)
+        if st.button('Run Tests'):
+            st.info('Placeholder for test run')
+
+def multi_select_unit_tests(selected_tests):
+    return st.multiselect(
+                'Test Classes', 
+                options=list(selected_tests.keys()),
+                format_func=lambda key: selected_tests[key]
+            )
 
 main()
 
